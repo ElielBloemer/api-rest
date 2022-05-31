@@ -1,0 +1,64 @@
+version: '3.8'
+services:
+        database:
+                image: postgres:14
+                container_name: postgres_db
+
+                environment:
+                        POSTGRES_USER: ebc
+                        POSTGRES_PASSWORD: hola
+                        POSTGRES_DB: produtos_apirest
+
+                ports:
+                        - "5432:5432"
+
+                restart: on-failure
+
+                volumes:
+                        - "/opt/postgresql:/var/lib/postgresql/data"
+
+                healthcheck:
+                        test: ["CMD-SHELL", "pg_isready", "-d", "db_prod"]
+                        interval: 30s
+                        timeout: 10s
+                        retries: 5
+
+        pgadmin:
+                image: dpage/pgadmin4:6.9
+                container_name: pgadmin
+                user: root
+
+                environment:
+                        PGADMIN_DEFAULT_EMAIL: elielbloemercorrea@gmail.com
+                        PGADMIN_DEFAULT_PASSWORD: root
+                
+                volumes:
+                        - "/opt/pgadmin4:/var/lib/pgadmin"
+
+                ports:
+                        - "80:80"
+
+                restart: on-failure
+
+                healthcheck:
+                        test: ["CMD-SHELL", "wget -O /dev/null http://localhost/ || exit 1"]
+                        interval: 30s #Desde que arranca espera el tiempo para probar el comando adentro del contenedor
+                        timeout: 10s #Si en este tiempo no retorna una respuesta positiva, intentara N veces mas(retries)
+                        retries: 5
+                                           
+        java-project:
+                image: openjdk:11
+                container_name: java_project
+                ports:
+                        - "8080:8080"
+                restart: on-failure
+
+                volumes:
+                        - "/home/ebloemer/Documents/api-rest/apirest/target:/opt/target/"
+                 
+                command: ["java","-jar","/opt/target/apirest-0.0.1-SNAPSHOT.jar"]
+
+                depends_on:
+                        database:
+                                condition: service_healthy
+       
